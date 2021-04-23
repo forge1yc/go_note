@@ -39,6 +39,7 @@ import (
 // and caches them for reuse by subsequent calls. It uses HTTP proxies
 // as directed by the $HTTP_PROXY and $NO_PROXY (or $http_proxy and
 // $no_proxy) environment variables.
+//TK:这里的意思是可以进行复用，但是这个复用应该指的是tcp连接
 var DefaultTransport RoundTripper = &Transport{
 	Proxy: ProxyFromEnvironment,
 	DialContext: (&net.Dialer{
@@ -46,15 +47,15 @@ var DefaultTransport RoundTripper = &Transport{
 		KeepAlive: 30 * time.Second,
 	}).DialContext,
 	ForceAttemptHTTP2:     true,
-	MaxIdleConns:          100,
-	IdleConnTimeout:       90 * time.Second,
-	TLSHandshakeTimeout:   10 * time.Second,
+	MaxIdleConns:          100, // 最大的空闲连接
+	IdleConnTimeout:       90 * time.Second, // 90s后自己关闭
+	TLSHandshakeTimeout:   10 * time.Second, // time wait  十秒
 	ExpectContinueTimeout: 1 * time.Second,
 }
 
 // DefaultMaxIdleConnsPerHost is the default value of Transport's
 // MaxIdleConnsPerHost.
-const DefaultMaxIdleConnsPerHost = 2
+const DefaultMaxIdleConnsPerHost = 2 //最多保持两个
 
 // Transport is an implementation of RoundTripper that supports HTTP,
 // HTTPS, and HTTP proxies (for either HTTP or HTTPS with CONNECT).
@@ -99,7 +100,7 @@ type Transport struct {
 	idleLRU      connLRU
 
 	reqMu       sync.Mutex
-	reqCanceler map[cancelKey]func(error)
+	reqCanceler map[cancelKey]func(error) //error 是参数
 
 	altMu    sync.Mutex   // guards changing altProto only
 	altProto atomic.Value // of nil or map[string]RoundTripper, key is URI scheme
@@ -117,31 +118,33 @@ type Transport struct {
 	// "http" is assumed.
 	//
 	// If Proxy is nil or returns a nil *URL, no proxy is used.
-	Proxy func(*Request) (*url.URL, error)
+	Proxy func(*Request) (*url.URL, error) // 我可以利用这个
 
-	// DialContext specifies the dial function for creating unencrypted TCP connections.
+	//TK: tcp是一个对等连接
+
+	// DialContext specifies the dial function for creating unencrypted TCP connections.// 未加密的tcp连接
 	// If DialContext is nil (and the deprecated Dial below is also nil),
-	// then the transport dials using package net.
+	// then the transport dials using package net. // 未指定才使用net包中的数据
 	//
-	// DialContext runs concurrently with calls to RoundTrip.
+	// DialContext runs concurrently with calls to RoundTrip. // 与rt的调用同时运行
 	// A RoundTrip call that initiates a dial may end up using
 	// a connection dialed previously when the earlier connection
 	// becomes idle before the later DialContext completes.
-	DialContext func(ctx context.Context, network, addr string) (net.Conn, error)
+	DialContext func(ctx context.Context, network, addr string) (net.Conn, error) // 这里返回的是一个tcp连接
 
 	// Dial specifies the dial function for creating unencrypted TCP connections.
 	//
 	// Dial runs concurrently with calls to RoundTrip.
 	// A RoundTrip call that initiates a dial may end up using
 	// a connection dialed previously when the earlier connection
-	// becomes idle before the later Dial completes.
+	// becomes idle before the later Dial completes.  //  这句话需要好好理解一下，不一定使用最近的
 	//
-	// Deprecated: Use DialContext instead, which allows the transport
+	// Deprecated: Use DialContext instead, which allows the transport // 这个被降级了
 	// to cancel dials as soon as they are no longer needed.
 	// If both are set, DialContext takes priority.
 	Dial func(network, addr string) (net.Conn, error)
 
-	// DialTLSContext specifies an optional dial function for creating
+	// DialTLSContext specifies an optional dial function for creating // 这个优先级更高,专门为了处理https
 	// TLS connections for non-proxied HTTPS requests.
 	//
 	// If DialTLSContext is nil (and the deprecated DialTLS below is also nil),
@@ -167,13 +170,15 @@ type Transport struct {
 	// If non-nil, HTTP/2 support may not be enabled by default.
 	TLSClientConfig *tls.Config
 
+	// transport layer security
 	// TLSHandshakeTimeout specifies the maximum amount of time waiting to
 	// wait for a TLS handshake. Zero means no timeout.
+	//TK:这里可以指定time wait
 	TLSHandshakeTimeout time.Duration
 
 	// DisableKeepAlives, if true, disables HTTP keep-alives and
 	// will only use the connection to the server for a single
-	// HTTP request.
+	// HTTP request. // 只用来单次请求，这里要多注意些，我可以完全控制的
 	//
 	// This is unrelated to the similarly named TCP keep-alives.
 	DisableKeepAlives bool
@@ -762,7 +767,7 @@ func (t *Transport) CloseIdleConnections() {
 	t.idleConn = nil
 	t.closeIdle = true // close newly idle connections
 	t.idleLRU = connLRU{}
-	t.idleMu.Unlock()
+	t.idleMu.Unlock() // 这里就锁这一点，可以进行重复利用
 	for _, conns := range m {
 		for _, pconn := range conns {
 			pconn.close(errCloseIdleConns)

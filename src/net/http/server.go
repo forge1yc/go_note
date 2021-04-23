@@ -41,7 +41,7 @@ var (
 	ErrBodyNotAllowed = errors.New("http: request method or response status code does not allow body")
 
 	// ErrHijacked is returned by ResponseWriter.Write calls when
-	// the underlying connection has been hijacked using the
+	s// the underlying connection has been hijacked using the
 	// Hijacker interface. A zero-byte write on a hijacked
 	// connection will return ErrHijacked without any other side
 	// effects.
