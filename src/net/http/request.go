@@ -111,7 +111,7 @@ type Request struct {
 	// URL specifies either the URI being requested (for server
 	// requests) or the URL to access (for client requests).
 	//
-	// For server requests, the URL is parsed from the URI
+	// For server requests, the URL is parsed from the URI // 服务器的话鸡西城uri，
 	// supplied on the Request-Line as stored in RequestURI.  For
 	// most requests, fields other than Path and RawQuery will be
 	// empty. (See RFC 7230, Section 5.3)
@@ -216,7 +216,7 @@ type Request struct {
 	// Transport.DisableKeepAlives were set.
 	Close bool
 
-	// For server requests, Host specifies the host on which the
+	// For server requests, Host specifies the host on which the // http1.1 和 2 字段的名字有区别？？
 	// URL is sought. For HTTP/1 (per RFC 7230, section 5.4), this
 	// is either the value of the "Host" header or the host name
 	// given in the URL itself. For HTTP/2, it is the value of the
@@ -233,25 +233,25 @@ type Request struct {
 	//
 	// For client requests, Host optionally overrides the Host
 	// header to send. If empty, the Request.Write method uses
-	// the value of URL.Host. Host may contain an international
+	// the value of URL.Host. Host may contain an international // 这里可能包括一个内部的域名
 	// domain name.
 	Host string
 
 	// Form contains the parsed form data, including both the URL
 	// field's query parameters and the PATCH, POST, or PUT form data.
-	// This field is only available after ParseForm is called.
-	// The HTTP client ignores Form and uses Body instead.
-	Form url.Values
+	// This field is only available after ParseForm is called. // 只有调用方法后才可见，可是这个明明是导出的啊
+	// The HTTP client ignores Form and uses Body instead. // client 直接使用client代替
+	Form url.Values // 这个存放的是表单数据
 
 	// PostForm contains the parsed form data from PATCH, POST
 	// or PUT body parameters.
 	//
 	// This field is only available after ParseForm is called.
 	// The HTTP client ignores PostForm and uses Body instead.
-	PostForm url.Values
+	PostForm url.Values // 这个是body里面的数据，上面的form包括的好像更多
 
 	// MultipartForm is the parsed multipart form, including file uploads.
-	// This field is only available after ParseMultipartForm is called.
+	// This field is only available after ParseMultipartForm is called. // 哦哦，client上传文件也是直接使用的body
 	// The HTTP client ignores MultipartForm and uses Body instead.
 	MultipartForm *multipart.Form
 
@@ -282,12 +282,12 @@ type Request struct {
 	// sets RemoteAddr to an "IP:port" address before invoking a
 	// handler.
 	// This field is ignored by the HTTP client.
-	RemoteAddr string
+	RemoteAddr string // 通常是日志作用   client忽视这个字段
 
 	// RequestURI is the unmodified request-target of the
 	// Request-Line (RFC 7230, Section 3.1.1) as sent by the client
 	// to a server. Usually the URL field should be used instead.
-	// It is an error to set this field in an HTTP client request.
+	// It is an error to set this field in an HTTP client request. // client 也不用这个
 	RequestURI string
 
 	// TLS allows HTTP servers and other software to record
@@ -297,7 +297,7 @@ type Request struct {
 	// TLS-enabled connections before invoking a handler;
 	// otherwise it leaves the field nil.
 	// This field is ignored by the HTTP client.
-	TLS *tls.ConnectionState
+	TLS *tls.ConnectionState // tls是传输层协议，可以直接看状态
 
 	// Cancel is an optional channel whose closure indicates that the client
 	// request should be regarded as canceled. Not all implementations of
