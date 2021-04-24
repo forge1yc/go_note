@@ -225,7 +225,7 @@ type Request struct {
 	// names, Host may be in Punycode or Unicode form. Use
 	// golang.org/x/net/idna to convert it to either format if
 	// needed.
-	// To prevent DNS rebinding attacks, server Handlers should
+	// To prevent DNS rebinding attacks, server Handlers should // tk 这里提到了dns攻击
 	// validate that the Host header has a value for which the
 	// Handler considers itself authoritative. The included
 	// ServeMux supports patterns registered to particular host

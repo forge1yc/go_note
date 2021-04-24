@@ -14,7 +14,7 @@ import (
 )
 
 func reader(s string) *Reader {
-	return NewReader(bufio.NewReader(strings.NewReader(s)))
+	return NewReader(bufio.NewReader(strings.NewReader(s))) // 这里进行了嵌套
 }
 
 func TestReadLine(t *testing.T) {

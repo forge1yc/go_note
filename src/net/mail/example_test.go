@@ -6,14 +6,14 @@ package mail_test
 
 import (
 	"fmt"
-	"io"
+	"io/ioutil"
 	"log"
 	"net/mail"
 	"strings"
 )
 
 func ExampleParseAddressList() {
-	const list = "Alice <alice@example.com>, Bob <bob@example.com>, Eve <eve@example.com>"
+	const list = "Alice <houyichaochao@gmail.com>, Bob <bob@example.com>, Eve <eve@example.com>"
 	emails, err := mail.ParseAddressList(list)
 	if err != nil {
 		log.Fatal(err)
@@ -62,7 +62,7 @@ Message body
 	fmt.Println("To:", header.Get("To"))
 	fmt.Println("Subject:", header.Get("Subject"))
 
-	body, err := io.ReadAll(m.Body)
+	body, err := ioutil.ReadAll(m.Body)
 	if err != nil {
 		log.Fatal(err)
 	}

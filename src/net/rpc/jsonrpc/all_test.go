@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/rpc"
 	"reflect"
@@ -87,7 +88,7 @@ func TestServerNoParams(t *testing.T) {
 	var resp ArithAddResp
 	if err := dec.Decode(&resp); err != nil {
 		t.Fatalf("Decode after no params: %s", err)
-	}
+		}
 	if resp.Error == nil {
 		t.Fatalf("Expected error, got nil")
 	}
@@ -248,7 +249,7 @@ func TestMalformedInput(t *testing.T) {
 func TestMalformedOutput(t *testing.T) {
 	cli, srv := net.Pipe()
 	go srv.Write([]byte(`{"id":0,"result":null,"error":null}`))
-	go io.ReadAll(srv)
+	go ioutil.ReadAll(srv)
 
 	client := NewClient(cli)
 	defer client.Close()
@@ -270,7 +271,7 @@ func TestServerErrorHasNullResult(t *testing.T) {
 	}{
 		Reader: strings.NewReader(`{"method": "Arith.Add", "id": "123", "params": []}`),
 		Writer: &out,
-		Closer: io.NopCloser(nil),
+		Closer: ioutil.NopCloser(nil),
 	})
 	r := new(rpc.Request)
 	if err := sc.ReadRequestHeader(r); err != nil {

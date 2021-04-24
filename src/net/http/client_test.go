@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	. "net/http"
@@ -189,7 +190,7 @@ func TestPostFormRequestFormat(t *testing.T) {
 	if g, e := tr.req.ContentLength, int64(len(expectedBody)); g != e {
 		t.Errorf("got ContentLength %d, want %d", g, e)
 	}
-	bodyb, err := io.ReadAll(tr.req.Body)
+	bodyb, err := ioutil.ReadAll(tr.req.Body)
 	if err != nil {
 		t.Fatalf("ReadAll on req.Body: %v", err)
 	}
@@ -420,7 +421,7 @@ func testRedirectsByMethod(t *testing.T, method string, table []redirectTest, wa
 	var ts *httptest.Server
 	ts = httptest.NewServer(HandlerFunc(func(w ResponseWriter, r *Request) {
 		log.Lock()
-		slurp, _ := io.ReadAll(r.Body)
+		slurp, _ := ioutil.ReadAll(r.Body)
 		fmt.Fprintf(&log.Buffer, "%s %s %q", r.Method, r.RequestURI, slurp)
 		if cl := r.Header.Get("Content-Length"); r.Method == "GET" && len(slurp) == 0 && (r.ContentLength != 0 || cl != "") {
 			fmt.Fprintf(&log.Buffer, " (but with body=%T, content-length = %v, %q)", r.Body, r.ContentLength, cl)
@@ -451,7 +452,7 @@ func testRedirectsByMethod(t *testing.T, method string, table []redirectTest, wa
 	for _, tt := range table {
 		content := tt.redirectBody
 		req, _ := NewRequest(method, ts.URL+tt.suffix, strings.NewReader(content))
-		req.GetBody = func() (io.ReadCloser, error) { return io.NopCloser(strings.NewReader(content)), nil }
+		req.GetBody = func() (io.ReadCloser, error) { return ioutil.NopCloser(strings.NewReader(content)), nil }
 		res, err := c.Do(req)
 
 		if err != nil {
@@ -521,7 +522,7 @@ func TestClientRedirectUseResponse(t *testing.T) {
 		t.Errorf("status = %d; want %d", res.StatusCode, StatusFound)
 	}
 	defer res.Body.Close()
-	slurp, err := io.ReadAll(res.Body)
+	slurp, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -7,6 +7,7 @@ package mail
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"mime"
 	"reflect"
 	"strings"
@@ -52,7 +53,7 @@ func TestParsing(t *testing.T) {
 			t.Errorf("test #%d: Incorrectly parsed message header.\nGot:\n%+v\nWant:\n%+v",
 				i, msg.Header, test.header)
 		}
-		body, err := io.ReadAll(msg.Body)
+		body, err := ioutil.ReadAll(msg.Body)
 		if err != nil {
 			t.Errorf("test #%d: Failed reading body: %v", i, err)
 			continue
@@ -880,7 +881,7 @@ func TestAddressParser(t *testing.T) {
 
 	ap := AddressParser{WordDecoder: &mime.WordDecoder{
 		CharsetReader: func(charset string, input io.Reader) (io.Reader, error) {
-			in, err := io.ReadAll(input)
+			in, err := ioutil.ReadAll(input)
 			if err != nil {
 				return nil, err
 			}

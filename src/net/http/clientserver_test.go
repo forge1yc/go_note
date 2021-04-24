@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	. "net/http"
@@ -52,7 +53,7 @@ func (t *clientServerTest) getURL(u string) string {
 		t.t.Fatal(err)
 	}
 	defer res.Body.Close()
-	slurp, err := io.ReadAll(res.Body)
+	slurp, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		t.t.Fatal(err)
 	}
