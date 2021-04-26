@@ -15,6 +15,7 @@ package net
 import (
 	"internal/bytealg"
 	"internal/itoa"
+	"std/testing"
 )
 
 // IP address lengths (bytes).

@@ -107,10 +107,10 @@ type Addr interface {
 	String() string  // string form of address (for example, "192.0.2.1:25", "[2001:db8::1]:80")
 }
 
-// Conn is a generic stream-oriented network connection.
+// Conn is a generic stream-oriented network connection. // udp is packet-oriented protocol
 //
 // Multiple goroutines may invoke methods on a Conn simultaneously.
-type Conn interface {
+type Conn interface { // TCP UDP IP UNIX 的链接抽象接口
 	// Read reads data from the connection.
 	// Read can be made to time out and return an error after a fixed
 	// time limit; see SetDeadline and SetReadDeadline.
@@ -303,7 +303,7 @@ func (c *conn) File() (f *os.File, err error) {
 	return
 }
 
-// PacketConn is a generic packet-oriented network connection.
+// PacketConn is a generic packet-oriented network connection. // UDP 这里的说明是正确的的
 //
 // Multiple goroutines may invoke methods on a PacketConn simultaneously.
 type PacketConn interface {

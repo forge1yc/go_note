@@ -14,8 +14,8 @@ import (
 	"time"
 )
 
-// Network file descriptor.
-type netFD struct {
+// Network file descriptor. // 网络文件描述符
+type netFD struct { /// 这个是简版的实现
 	pfd poll.FD
 
 	// immutable until Close

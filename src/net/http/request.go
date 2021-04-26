@@ -292,11 +292,11 @@ type Request struct {
 
 	// TLS allows HTTP servers and other software to record
 	// information about the TLS connection on which the request
-	// was received. This field is not filled in by ReadRequest.
+	// was received. This field is not filled in by ReadRequest. // 不被填充
 	// The HTTP server in this package sets the field for
 	// TLS-enabled connections before invoking a handler;
 	// otherwise it leaves the field nil.
-	// This field is ignored by the HTTP client.
+	// This field is ignored by the HTTP client. // client层不需要看这个，可以直接复用的
 	TLS *tls.ConnectionState // tls是传输层协议，可以直接看状态
 
 	// Cancel is an optional channel whose closure indicates that the client
@@ -313,7 +313,7 @@ type Request struct {
 	// Response is the redirect response which caused this request
 	// to be created. This field is only populated during client
 	// redirects.
-	Response *Response
+	Response *Response // 只有重定向的时候采用这个  那么我实现的那个重定向是不是可以使用这个
 
 	// ctx is either the client or server context. It should only
 	// be modified via copying the whole Request using WithContext.
@@ -368,7 +368,7 @@ func (r *Request) WithContext(ctx context.Context) *Request {
 // For an outgoing client request, the context controls the entire
 // lifetime of a request and its response: obtaining a connection,
 // sending the request, and reading the response headers and body.
-func (r *Request) Clone(ctx context.Context) *Request {
+func (r *Request) Clone(ctx context.Context) *Request { // 为啥要clone我没搞懂，可以不使用这个啊  推荐我重定向的时候使用response，这样能重定向到外面吗
 	if ctx == nil {
 		panic("nil context")
 	}
@@ -415,7 +415,7 @@ var ErrNoCookie = errors.New("http: named cookie not present")
 
 // Cookie returns the named cookie provided in the request or
 // ErrNoCookie if not found.
-// If multiple cookies match the given name, only one cookie will
+// If multiple cookies match the given name, only one cookie will // 多个的时候只有一个给出来
 // be returned.
 func (r *Request) Cookie(name string) (*Cookie, error) {
 	for _, c := range readCookies(r.Header, name) {
@@ -433,9 +433,9 @@ func (r *Request) Cookie(name string) (*Cookie, error) {
 func (r *Request) AddCookie(c *Cookie) {
 	s := fmt.Sprintf("%s=%s", sanitizeCookieName(c.Name), sanitizeCookieValue(c.Value))
 	if c := r.Header.Get("Cookie"); c != "" {
-		r.Header.Set("Cookie", c+"; "+s)
+		r.Header.Set("Cookie", c+"; "+s) // 这里处理的好原始啊
 	} else {
-		r.Header.Set("Cookie", s)
+		r.Header.Set("Cookie", s) // 如果没有cookie就这样处理
 	}
 }
 
@@ -446,12 +446,12 @@ func (r *Request) AddCookie(c *Cookie) {
 // Header map as Header["Referer"]; the benefit of making it available
 // as a method is that the compiler can diagnose programs that use the
 // alternate (correct English) spelling req.Referrer() but cannot
-// diagnose programs that use Header["Referrer"].
+// diagnose programs that use Header["Referrer"]. // what fuck!
 func (r *Request) Referer() string {
 	return r.Header.Get("Referer")
 }
 
-// multipartByReader is a sentinel value.
+// multipartByReader is a sentinel value. // 哨兵值
 // Its presence in Request.MultipartForm indicates that parsing of the request
 // body has been handed off to a MultipartReader instead of ParseMultipartForm.
 var multipartByReader = &multipart.Form{
@@ -491,7 +491,7 @@ func (r *Request) multipartReader(allowMixed bool) (*multipart.Reader, error) {
 }
 
 // isH2Upgrade reports whether r represents the http2 "client preface"
-// magic string.
+// magic string. // 魔术字符串？
 func (r *Request) isH2Upgrade() bool {
 	return r.Method == "PRI" && len(r.Header) == 0 && r.URL.Path == "*" && r.Proto == "HTTP/2.0"
 }
@@ -545,7 +545,7 @@ var errMissingHost = errors.New("http: Request.Write on Request with no Host or 
 // waitForContinue may be nil
 // always closes body
 func (r *Request) write(w io.Writer, usingProxy bool, extraHeaders Header, waitForContinue func() bool) (err error) {
-	trace := httptrace.ContextClientTrace(r.Context())
+	trace := httptrace.ContextClientTrace(r.Context()) // 这里是加入轨迹
 	if trace != nil && trace.WroteRequest != nil {
 		defer func() {
 			trace.WroteRequest(httptrace.WroteRequestInfo{
@@ -566,7 +566,7 @@ func (r *Request) write(w io.Writer, usingProxy bool, extraHeaders Header, waitF
 	// Find the target host. Prefer the Host: header, but if that
 	// is not given, use the host from the request URL.
 	//
-	// Clean the host, in case it arrives with unexpected stuff in it.
+	// Clean the host, in case it arrives with unexpected stuff in it.a // 还要清除
 	host := cleanHost(r.Host)
 	if host == "" {
 		if r.URL == nil {
@@ -601,7 +601,7 @@ func (r *Request) write(w io.Writer, usingProxy bool, extraHeaders Header, waitF
 	// Don't always call NewWriter, as that forces a bytes.Buffer
 	// and other small bufio Writers to have a minimum 4k buffer
 	// size.
-	var bw *bufio.Writer
+	var bw *bufio.Writer // 一个进程下面挂着很多的fd
 	if _, ok := w.(io.ByteWriter); !ok {
 		bw = bufio.NewWriter(w)
 		w = bw

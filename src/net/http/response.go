@@ -21,7 +21,7 @@ import (
 	"golang.org/x/net/http/httpguts"
 )
 
-var respExcludeHeader = map[string]bool{
+var respExcludeHeader = map[string]bool{ // 这些header都不要
 	"Content-Length":    true,
 	"Transfer-Encoding": true,
 	"Trailer":           true,
