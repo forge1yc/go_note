@@ -29,7 +29,7 @@ func runtime_pollSetDeadline(ctx uintptr, d int64, mode int)
 func runtime_pollUnblock(ctx uintptr)
 func runtime_isPollServerDescriptor(fd uintptr) bool
 
-type pollDesc struct {
+type pollDesc struct { // 这个是一个很重要的struct，需要注意
 	runtimeCtx uintptr
 }
 

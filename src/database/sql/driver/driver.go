@@ -79,18 +79,18 @@ type NamedValue struct {
 // driver.
 //
 // Database drivers may implement DriverContext for access
-// to contexts and to parse the name only once for a pool of connections,
-// instead of once per connection.
+// to contexts and to parse the name only once for a pool of connections, //对于一个连接池只翻译一次
+// instead of once per connection. // 不是每一个连接都起一个
 type Driver interface {
 	// Open returns a new connection to the database.
 	// The name is a string in a driver-specific format.
 	//
 	// Open may return a cached connection (one previously
 	// closed), but doing so is unnecessary; the sql package
-	// maintains a pool of idle connections for efficient re-use.
+	// maintains a pool of idle connections for efficient re-use. // 可以高效重新使用
 	//
 	// The returned connection is only used by one goroutine at a
-	// time.
+	// time. // 返回的连接 只能同时被一个g 使用
 	Open(name string) (Conn, error)
 }
 

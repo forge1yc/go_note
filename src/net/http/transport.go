@@ -40,12 +40,12 @@ import (
 // as directed by the $HTTP_PROXY and $NO_PROXY (or $http_proxy and
 // $no_proxy) environment variables.
 //TK:这里的意思是可以进行复用，但是这个复用应该指的是tcp连接
-var DefaultTransport RoundTripper = &Transport{
+var DefaultTransport RoundTripper = &Transport{ // 不过这里没有说明是否是keep-alive，如果我的底层实
 	Proxy: ProxyFromEnvironment,
 	DialContext: (&net.Dialer{
 		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
-	}).DialContext,
+		KeepAlive: 30 * time.Second, // 这里看，底层的tcp连接还是短连接，所以这里是否可以设置，可我默认开启了长连接啊，这样设置不会有问题吗
+	}).DialContext, // 注意哦，这里代表的是一个函数
 	ForceAttemptHTTP2:     true,
 	MaxIdleConns:          100, // 最大的空闲连接
 	IdleConnTimeout:       90 * time.Second, // 90s后自己关闭
@@ -178,10 +178,10 @@ type Transport struct {
 
 	// DisableKeepAlives, if true, disables HTTP keep-alives and
 	// will only use the connection to the server for a single
-	// HTTP request. // 只用来单次请求，这里要多注意些，我可以完全控制的
+	// HTTP request. // 只用来单次请求，这里要多注意些，我可以完全控制的  所以最好是长连接，不然很浪费性能
 	//
-	// This is unrelated to the similarly named TCP keep-alives.
-	DisableKeepAlives bool
+	// This is unrelated to the similarly named TCP keep-alives. // 而且这里说了，和tcp 的 keep-alive 不一样，没有关系，只是http，应用层的事情
+	DisableKeepAlives bool // 所以默认开启的长连接，这里开头是dis，负负得正
 
 	// DisableCompression, if true, prevents the Transport from
 	// requesting compression with an "Accept-Encoding: gzip"

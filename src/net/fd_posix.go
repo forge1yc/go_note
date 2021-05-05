@@ -15,13 +15,14 @@ import (
 )
 
 // Network file descriptor. // 网络文件描述符
+// fd返回的时候如何知道给谁呢？？？？？
 type netFD struct { /// 这个是简版的实现
 	pfd poll.FD
 
 	// immutable until Close
 	family      int
 	sotype      int
-	isConnected bool // handshake completed or use of association with peer
+	isConnected bool // handshake completed or use of association with peer  我需要在这里找到哪个是违规的
 	net         string
 	laddr       Addr
 	raddr       Addr
@@ -60,7 +61,7 @@ func (fd *netFD) Read(p []byte) (n int, err error) {
 
 func (fd *netFD) readFrom(p []byte) (n int, sa syscall.Sockaddr, err error) {
 	n, sa, err = fd.pfd.ReadFrom(p)
-	runtime.KeepAlive(fd)
+	runtime.KeepAlive(fd) // 确保不被释放
 	return n, sa, wrapSyscallError(readFromSyscallName, err)
 }
 

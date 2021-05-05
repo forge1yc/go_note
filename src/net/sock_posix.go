@@ -17,7 +17,8 @@ import (
 // socket returns a network file descriptor that is ready for
 // asynchronous I/O using the network poller.
 func socket(ctx context.Context, net string, family, sotype, proto int, ipv6only bool, laddr, raddr sockaddr, ctrlFn func(string, string, syscall.RawConn) error) (fd *netFD, err error) {
-	s, err := sysSocket(family, sotype, proto)
+	// 调用各平台的sokcet api  创建socket
+	s, err := sysSocket(family, sotype, proto) // 这里进行相关的系统调用  这里是重点
 	if err != nil {
 		return nil, err
 	}
@@ -25,6 +26,7 @@ func socket(ctx context.Context, net string, family, sotype, proto int, ipv6only
 		poll.CloseFunc(s)
 		return nil, err
 	}
+	// 创建fd
 	if fd, err = newFD(s, family, sotype, net); err != nil {
 		poll.CloseFunc(s)
 		return nil, err
@@ -55,12 +57,14 @@ func socket(ctx context.Context, net string, family, sotype, proto int, ipv6only
 	if laddr != nil && raddr == nil {
 		switch sotype {
 		case syscall.SOCK_STREAM, syscall.SOCK_SEQPACKET:
+			// 进行实际监听
 			if err := fd.listenStream(laddr, listenerBacklog(), ctrlFn); err != nil {
 				fd.Close()
 				return nil, err
 			}
 			return fd, nil
 		case syscall.SOCK_DGRAM:
+			// package
 			if err := fd.listenDatagram(laddr, ctrlFn); err != nil {
 				fd.Close()
 				return nil, err
@@ -194,15 +198,16 @@ func (fd *netFD) listenStream(laddr sockaddr, backlog int, ctrlFn func(string, s
 	if err = syscall.Bind(fd.pfd.Sysfd, lsa); err != nil {
 		return os.NewSyscallError("bind", err)
 	}
-	if err = listenFunc(fd.pfd.Sysfd, backlog); err != nil {
+	if err = listenFunc(fd.pfd.Sysfd, backlog); err != nil { // 这里要多注意
 		return os.NewSyscallError("listen", err)
 	}
-	if err = fd.init(); err != nil {
+	if err = fd.init(); err != nil { //这里是底层epoll
 		return err
 	}
-	lsa, _ = syscall.Getsockname(fd.pfd.Sysfd)
+	lsa, _ = syscall.Getsockname(fd.pfd.Sysfd) //
 	fd.setAddr(fd.addrFunc()(lsa), nil)
 	return nil
+	// 这里要注意net/sock_posix.go
 }
 
 func (fd *netFD) listenDatagram(laddr sockaddr, ctrlFn func(string, string, syscall.RawConn) error) error {

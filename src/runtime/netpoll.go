@@ -12,16 +12,16 @@ import (
 	"unsafe"
 )
 
-// Integrated network poller (platform-independent part).
-// A particular implementation (epoll/kqueue/port/AIX/Windows)
+// Integrated network poller (platform-independent part). // 这个是平台独立的
+// A particular implementation (epoll/kqueue/port/AIX/Windows) // 这个是特殊的实现，epoll kqueue port AIX Windows
 // must define the following functions:
 //
 // func netpollinit()
 //     Initialize the poller. Only called once.
 //
 // func netpollopen(fd uintptr, pd *pollDesc) int32
-//     Arm edge-triggered notifications for fd. The pd argument is to pass
-//     back to netpollready when fd is ready. Return an errno value.
+//     Arm edge-triggered notifications for fd. The pd argument is to pass // 当准备好了
+//     back to netpollready when fd is ready. Return an errno value. // 这里就是等准备好了，去拿数据
 //
 // func netpollclose(fd uintptr) int32
 //     Disable notifications for fd. Return an errno value.
@@ -29,7 +29,7 @@ import (
 // func netpoll(delta int64) gList
 //     Poll the network. If delta < 0, block indefinitely. If delta == 0,
 //     poll without blocking. If delta > 0, block for up to delta nanoseconds.
-//     Return a list of goroutines built by calling netpollready.
+//     Return a list of goroutines built by calling netpollready. // 这里会返回go的协程,就是数据准备好的
 //
 // func netpollBreak()
 //     Wake up the network poller, assumed to be blocked in netpoll.
@@ -40,11 +40,13 @@ import (
 // Error codes returned by runtime_pollReset and runtime_pollWait.
 // These must match the values in internal/poll/fd_poll_runtime.go.
 const (
-	pollNoError        = 0 // no error
+	pollNoError        = 0 // no error // 这里的命名规范，需要额外注意
 	pollErrClosing     = 1 // descriptor is closed
 	pollErrTimeout     = 2 // I/O timeout
 	pollErrNotPollable = 3 // general error polling descriptor
 )
+
+//TK: 这个包又会调用epoll的实现
 
 // pollDesc contains 2 binary semaphores, rg and wg, to park reader and writer
 // goroutines respectively. The semaphore can be in the following states:
@@ -54,7 +56,7 @@ const (
 //          the goroutine commits to park by changing the state to G pointer,
 //          or, alternatively, concurrent io notification changes the state to pdReady,
 //          or, alternatively, concurrent timeout/close changes the state to nil.
-// G pointer - the goroutine is blocked on the semaphore;
+// G pointer - the goroutine is blocked on the semaphore; // 这个字就是信号量的意思
 //             io notification or timeout/close changes the state to pdReady or nil respectively
 //             and unparks the goroutine.
 // nil - none of the above.
@@ -65,12 +67,16 @@ const (
 
 const pollBlockSize = 4 * 1024
 
+
+
+// 网络poll 和 文件的poll 不是一个
+
 // Network poller descriptor.
 //
 // No heap pointers.
 //
-//go:notinheap
-type pollDesc struct {
+//go:notinheap // not in heap
+type pollDesc struct { // 这个地址结构是很中啊哟的
 	link *pollDesc // in pollcache, protected by pollcache.lock
 
 	// The lock protects pollOpen, pollSetDeadline, pollUnblock and deadlineimpl operations.
@@ -90,7 +96,7 @@ type pollDesc struct {
 	rt      timer     // read deadline timer (set if rt.f != nil)
 	rd      int64     // read deadline
 	wseq    uintptr   // protects from stale write timers
-	wg      uintptr   // pdReady, pdWait, G waiting for write or nil
+	wg      uintptr   // pdReady, pdWait, G waiting for write or nil // 协程正在等待
 	wt      timer     // write deadline timer
 	wd      int64     // write deadline
 	self    *pollDesc // storage for indirect interface. See (*pollDesc).makeArg.
@@ -217,7 +223,7 @@ func poll_runtime_pollReset(pd *pollDesc, mode int) int {
 // according to mode, which is 'r' or 'w'.
 // This returns an error code; the codes are defined above.
 //go:linkname poll_runtime_pollWait internal/poll.runtime_pollWait
-func poll_runtime_pollWait(pd *pollDesc, mode int) int {
+func poll_runtime_pollWait(pd *pollDesc, mode int) int { // 这里等待fd刻度
 	errcode := netpollcheckerr(pd, int32(mode))
 	if errcode != pollNoError {
 		return errcode
@@ -226,7 +232,7 @@ func poll_runtime_pollWait(pd *pollDesc, mode int) int {
 	if GOOS == "solaris" || GOOS == "illumos" || GOOS == "aix" {
 		netpollarm(pd, mode)
 	}
-	for !netpollblock(pd, int32(mode), false) {
+	for !netpollblock(pd, int32(mode), false) { // 这里是最重要的部分
 		errcode = netpollcheckerr(pd, int32(mode))
 		if errcode != pollNoError {
 			return errcode
@@ -416,8 +422,8 @@ func netpollgoready(gp *g, traceskip int) {
 }
 
 // returns true if IO is ready, or false if timedout or closed
-// waitio - wait only for completed IO, ignore errors
-func netpollblock(pd *pollDesc, mode int32, waitio bool) bool {
+// waitio - wait only for completed IO, ignore errors // 只对完成的io有反应
+func netpollblock(pd *pollDesc, mode int32, waitio bool) bool { // 很重要
 	gpp := &pd.rg
 	if mode == 'w' {
 		gpp = &pd.wg
@@ -425,15 +431,17 @@ func netpollblock(pd *pollDesc, mode int32, waitio bool) bool {
 
 	// set the gpp semaphore to pdWait
 	for {
+		// 1
 		old := *gpp
-		if old == pdReady {
+		if old == pdReady { // 如果已经准备好了
 			*gpp = 0
 			return true
 		}
 		if old != 0 {
 			throw("runtime: double wait")
 		}
-		if atomic.Casuintptr(gpp, 0, pdWait) {
+		// 2
+		if atomic.Casuintptr(gpp, 0, pdWait) { // 自选，等于0 替换为pdWait
 			break
 		}
 	}
@@ -441,11 +449,14 @@ func netpollblock(pd *pollDesc, mode int32, waitio bool) bool {
 	// need to recheck error states after setting gpp to pdWait
 	// this is necessary because runtime_pollUnblock/runtime_pollSetDeadline/deadlineimpl
 	// do the opposite: store to closing/rd/wd, membarrier, load of rg/wg
+
+	// 3
 	if waitio || netpollcheckerr(pd, mode) == 0 {
-		gopark(netpollblockcommit, unsafe.Pointer(gpp), waitReasonIOWait, traceEvGoBlockNet, 5)
+		gopark(netpollblockcommit, unsafe.Pointer(gpp), waitReasonIOWait, traceEvGoBlockNet, 5)// 将当前goroutine置于等待状态，并等待下一次的调度, rpc 本质就是进程通信
 	}
-	// be careful to not lose concurrent pdReady notification
-	old := atomic.Xchguintptr(gpp, 0)
+	// be careful to not lose concurrent pdReady notification // 不要丢失状态
+	// 4
+	old := atomic.Xchguintptr(gpp, 0)  // 这里是原子操作 noscape 所以这个操作需要进行判断
 	if old > pdWait {
 		throw("runtime: corrupted polldesc")
 	}

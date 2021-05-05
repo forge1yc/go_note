@@ -5,6 +5,7 @@
 package driver
 
 import (
+	"database/sql"
 	"reflect"
 	"testing"
 	"time"
@@ -79,6 +80,15 @@ func TestValueConverters(t *testing.T) {
 				i, tt.c, tt.in, tt.in, out, out, tt.out, tt.out)
 		}
 	}
+
+	db, err := sql.Open("mysql", "user:password@/dbname")
+	if err != nil {
+		panic(err)
+	}
+	// See "Important settings" section.
+	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
 }
 
 type dec struct {

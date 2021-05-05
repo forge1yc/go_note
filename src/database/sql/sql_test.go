@@ -4052,25 +4052,34 @@ func TestNamedValueCheckerSkip(t *testing.T) {
 }
 
 func TestOpenConnector(t *testing.T) {
-	Register("testctx", &fakeDriverCtx{})
-	db, err := Open("testctx", "people")
+	//Register("testctx", &fakeDriverCtx{})
+	//db, err := Open("testctx", "people")
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//defer db.Close()
+	//
+	//c, ok := db.connector.(*fakeConnector)
+	//if !ok {
+	//	t.Fatal("not using *fakeConnector")
+	//}
+	//
+	//if err := db.Close(); err != nil {
+	//	t.Fatal(err)
+	//}
+	//
+	//if !c.closed {
+	//	t.Fatal("connector is not closed")
+	//}
+
+	db, err := Open("mysql", "user:password@/dbname")
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
-	defer db.Close()
-
-	c, ok := db.connector.(*fakeConnector)
-	if !ok {
-		t.Fatal("not using *fakeConnector")
-	}
-
-	if err := db.Close(); err != nil {
-		t.Fatal(err)
-	}
-
-	if !c.closed {
-		t.Fatal("connector is not closed")
-	}
+	// See "Important settings" section.
+	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
 }
 
 type ctxOnlyDriver struct {

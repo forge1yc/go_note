@@ -14,7 +14,7 @@ import (
 )
 
 // FD is a file descriptor. The net and os packages use this type as a
-// field of a larger type representing a network connection or OS file.
+// field of a larger type representing a network connection or OS file. // 用来代表网络连接和系统文件，就是网络连接可以用fd替代
 type FD struct {
 	// Lock sysfd and serialize access to Read and Write methods.
 	fdmu fdMutex
@@ -23,34 +23,34 @@ type FD struct {
 	Sysfd int
 
 	// I/O poller.
-	pd pollDesc
+	pd pollDesc // 这个是用来和epoll交互的最重要的数据结构
 
 	// Writev cache.
 	iovecs *[]syscall.Iovec
 
 	// Semaphore signaled when file is closed.
-	csema uint32
+	csema uint32 // 发信号
 
 	// Non-zero if this file has been set to blocking mode.
-	isBlocking uint32
+	isBlocking uint32 // 这里可以设置文件的阻塞方式
 
 	// Whether this is a streaming descriptor, as opposed to a
 	// packet-based descriptor like a UDP socket. Immutable.
-	IsStream bool
+	IsStream bool // 是否基于流的
 
 	// Whether a zero byte read indicates EOF. This is false for a
 	// message based socket connection.
 	ZeroReadIsEOF bool
 
 	// Whether this is a file rather than a network socket.
-	isFile bool
+	isFile bool // 这里可以进行判断
 }
 
 // Init initializes the FD. The Sysfd field should already be set.
 // This can be called multiple times on a single FD.
 // The net argument is a network name from the net package (e.g., "tcp"),
 // or "file".
-// Set pollable to true if fd should be managed by runtime netpoll.
+// Set pollable to true if fd should be managed by runtime netpoll. // 有一个运行时的netpoll
 func (fd *FD) Init(net string, pollable bool) error {
 	// We don't actually care about the various network types.
 	if net == "file" {
@@ -160,7 +160,7 @@ func (fd *FD) Read(p []byte) (int, error) {
 		p = p[:maxRW]
 	}
 	for {
-		n, err := ignoringEINTRIO(syscall.Read, fd.Sysfd, p)
+		n, err := ignoringEINTRIO(syscall.Read, fd.Sysfd, p) // 这个和1.15 版本的有区别了，可能需要自己实现一下
 		if err != nil {
 			n = 0
 			if err == syscall.EAGAIN && fd.pd.pollable() {
@@ -379,6 +379,7 @@ func (fd *FD) WriteMsg(p []byte, oob []byte, sa syscall.Sockaddr) (int, int, err
 	}
 }
 
+// 这里和底层的epoll打交道
 // Accept wraps the accept network call.
 func (fd *FD) Accept() (int, syscall.Sockaddr, string, error) {
 	if err := fd.readLock(); err != nil {
@@ -387,10 +388,12 @@ func (fd *FD) Accept() (int, syscall.Sockaddr, string, error) {
 	defer fd.readUnlock()
 
 	if err := fd.pd.prepareRead(fd.isFile); err != nil {
-		return -1, nil, "", err
+		return -1, nil, "", err // 检查是否可以
 	}
 	for {
-		s, rsa, errcall, err := accept(fd.Sysfd)
+
+		// for内循环，说明是阻塞的
+		s, rsa, errcall, err := accept(fd.Sysfd) // 尝试获取
 		if err == nil {
 			return s, rsa, "", err
 		}

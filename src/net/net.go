@@ -107,7 +107,7 @@ type Addr interface {
 	String() string  // string form of address (for example, "192.0.2.1:25", "[2001:db8::1]:80")
 }
 
-// Conn is a generic stream-oriented network connection. // udp is packet-oriented protocol
+// Conn is a generic stream-oriented network connection. // udp is packet-oriented protocol  // 面向流的网络连接
 //
 // Multiple goroutines may invoke methods on a Conn simultaneously.
 type Conn interface { // TCP UDP IP UNIX 的链接抽象接口
@@ -180,7 +180,7 @@ func (c *conn) Read(b []byte) (int, error) {
 	if !c.ok() {
 		return 0, syscall.EINVAL
 	}
-	n, err := c.fd.Read(b)
+	n, err := c.fd.Read(b) //实际上是 fd read 而不是真正的描述符   这里是文件描述符准备好了之后自己进行调用，而且是阻塞的，不过因为在多线程里面，感觉不出来
 	if err != nil && err != io.EOF {
 		err = &OpError{Op: "read", Net: c.fd.net, Source: c.fd.laddr, Addr: c.fd.raddr, Err: err}
 	}
@@ -513,13 +513,13 @@ type temporary interface {
 }
 
 func (e *OpError) Temporary() bool {
-	// Treat ECONNRESET and ECONNABORTED as temporary errors when
+	// Treat ECONNRESET and ECONNABORTED as temporary errors when // 这里都是可怜人
 	// they come from calling accept. See issue 6163.
 	if e.Op == "accept" && isConnError(e.Err) {
 		return true
 	}
 
-	if ne, ok := e.Err.(*os.SyscallError); ok {
+	if ne, ok := e.Err.(*os.SyscallError); ok { // error 也可以使用这个
 		t, ok := ne.Err.(temporary)
 		return ok && t.Temporary()
 	}

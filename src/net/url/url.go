@@ -24,6 +24,7 @@ type Error struct {
 	URL string
 	Err error
 }
+// 这个包下面有一些常用的操作，可以进行使用，上次就是这里吃了大亏，导致调试了好久，没有意识到传错了，所以专业的事情，要让专业的人来
 
 func (e *Error) Unwrap() error { return e.Err }
 func (e *Error) Error() string { return fmt.Sprintf("%s %q: %s", e.Op, e.URL, e.Err) }
@@ -337,7 +338,7 @@ func escape(s string, mode encoding) string {
 	return string(t)
 }
 
-// A URL represents a parsed URL (technically, a URI reference).
+// A URL represents a parsed URL (technically, a URI reference). // 逼格高叫 URI 全网唯一资源标识符
 //
 // The general form represented is:
 //
@@ -345,13 +346,13 @@ func escape(s string, mode encoding) string {
 //
 // URLs that do not start with a slash after the scheme are interpreted as:
 //
-//	scheme:opaque[?query][#fragment]
+//	scheme:opaque[?query][#fragment] // 透明的
 //
 // Note that the Path field is stored in decoded form: /%47%6f%2f becomes /Go/.
 // A consequence is that it is impossible to tell which slashes in the Path were
-// slashes in the raw URL and which were %2f. This distinction is rarely important,
+// slashes in the raw URL and which were %2f. This distinction is rarely important, // 斜杠语法
 // but when it is, the code should use RawPath, an optional field which only gets
-// set if the default encoding is different from Path.
+// set if the default encoding is different from Path. // which set
 //
 // URL's String method uses the EscapedPath method to obtain the path. See the
 // EscapedPath method for more details.
@@ -492,7 +493,7 @@ func Parse(rawURL string) (*URL, error) {
 // url was received in an HTTP request, so the url is interpreted
 // only as an absolute URI or an absolute path.
 // The string url is assumed not to have a #fragment suffix.
-// (Web browsers strip #fragment before sending the URL to a web server.)
+// (Web browsers strip #fragment before sending the URL to a web server.) // auto????
 func ParseRequestURI(rawURL string) (*URL, error) {
 	url, err := parse(rawURL, true)
 	if err != nil {
@@ -688,7 +689,7 @@ func (u *URL) setPath(p string) error {
 	return nil
 }
 
-// EscapedPath returns the escaped form of u.Path.
+// EscapedPath returns the escaped form of u.Path. // escapedPath
 // In general there are multiple possible escaped forms of any path.
 // EscapedPath returns u.RawPath when it is a valid escaping of u.Path.
 // Otherwise EscapedPath ignores u.RawPath and computes an escaped
@@ -696,7 +697,7 @@ func (u *URL) setPath(p string) error {
 // The String and RequestURI methods use EscapedPath to construct
 // their results.
 // In general, code should call EscapedPath instead of
-// reading u.RawPath directly.
+// reading u.RawPath directly. // 这里是重要的
 func (u *URL) EscapedPath() string {
 	if u.RawPath != "" && validEncoded(u.RawPath, encodePath) {
 		p, err := unescape(u.RawPath, encodePath)
@@ -728,7 +729,7 @@ func validEncoded(s string, mode encoding) bool {
 		case '%':
 			// ok - percent encoded, will decode
 		default:
-			if shouldEscape(s[i], mode) {
+			if shouldEscape(s[i], mode) { // 这里说明需要转义
 				return false
 			}
 		}
@@ -874,7 +875,7 @@ func (u *URL) Redacted() string {
 // Values maps a string key to a list of values.
 // It is typically used for query parameters and form values.
 // Unlike in the http.Header map, the keys in a Values map
-// are case-sensitive.
+// are case-sensitive.      //TK: 大小写敏感的
 type Values map[string][]string
 
 // Get gets the first value associated with the given key.
@@ -927,8 +928,8 @@ func ParseQuery(query string) (Values, error) {
 func parseQuery(m Values, query string) (err error) {
 	for query != "" {
 		key := query
-		if i := strings.IndexAny(key, "&;"); i >= 0 {
-			key, query = key[:i], key[i+1:]
+		if i := strings.IndexAny(key, "&;"); i >= 0 { // 这里为啥是有分号呢????  这里任何一个都行？？？？？？？？？？？？？？？
+			key, query = key[:i], key[i+1:] // 这个解析方式？？？？  query留着下一次遍历
 		} else {
 			query = ""
 		}
@@ -937,9 +938,9 @@ func parseQuery(m Values, query string) (err error) {
 		}
 		value := ""
 		if i := strings.Index(key, "="); i >= 0 {
-			key, value = key[:i], key[i+1:]
+			key, value = key[:i], key[i+1:] // 左闭右开
 		}
-		key, err1 := QueryUnescape(key)
+		key, err1 := QueryUnescape(key) // 竟然也用err1
 		if err1 != nil {
 			if err == nil {
 				err = err1
@@ -953,13 +954,15 @@ func parseQuery(m Values, query string) (err error) {
 			}
 			continue
 		}
-		m[key] = append(m[key], value)
+		m[key] = append(m[key], value) // 这里就给添加进去了   key 对应的是一个slice，所以echo也就是封装了这些操作而已
 	}
 	return err
 }
 
 // Encode encodes the values into ``URL encoded'' form
 // ("bar=baz&foo=quux") sorted by key.
+
+// 这里要注意，之前这里吃亏了
 func (v Values) Encode() string {
 	if v == nil {
 		return ""
@@ -972,7 +975,7 @@ func (v Values) Encode() string {
 	sort.Strings(keys)
 	for _, k := range keys {
 		vs := v[k]
-		keyEscaped := QueryEscape(k)
+		keyEscaped := QueryEscape(k) // 安全处理
 		for _, v := range vs {
 			if buf.Len() > 0 {
 				buf.WriteByte('&')

@@ -18,13 +18,16 @@ import (
 
 // Wrapper around the socket system call that marks the returned file
 // descriptor as nonblocking and close-on-exec.
-func sysSocket(family, sotype, proto int) (int, error) {
+func sysSocket(family, sotype, proto int) (int, error) { // 这个和老版本有区别了
 	// See ../syscall/exec_unix.go for description of ForkLock.
 	syscall.ForkLock.RLock()
-	s, err := socketFunc(family, sotype, proto)
+	s, err := socketFunc(family, sotype, proto) // 通知将socket进行阻塞
 	if err == nil {
 		syscall.CloseOnExec(s)
 	}
+
+
+	// 这里是内核版本低于2.6.27时，代码会走到这里 ,下面的代码防止描述符溢出
 	syscall.ForkLock.RUnlock()
 	if err != nil {
 		return -1, os.NewSyscallError("socket", err)

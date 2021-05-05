@@ -19,6 +19,15 @@ import (
 	"time"
 )
 
+func TestA(t *testing.T) {
+
+	conn, _ := Dial("tcp","127.0.0.1:6379")
+
+	conn.Write()
+
+
+}
+
 func TestCloseRead(t *testing.T) {
 	switch runtime.GOOS {
 	case "plan9":

@@ -30,7 +30,7 @@ var (
 	netpollWakeSig uint32 // used to avoid duplicate calls of netpollBreak
 )
 
-func netpollinit() {
+func netpollinit() {// 这里是运行时才会走到这里
 	epfd = epollcreate1(_EPOLL_CLOEXEC)
 	if epfd < 0 {
 		epfd = epollcreate(1024)
@@ -66,7 +66,7 @@ func netpollopen(fd uintptr, pd *pollDesc) int32 {
 	var ev epollevent
 	ev.events = _EPOLLIN | _EPOLLOUT | _EPOLLRDHUP | _EPOLLET
 	*(**pollDesc)(unsafe.Pointer(&ev.data)) = pd
-	return -epollctl(epfd, _EPOLL_CTL_ADD, int32(fd), &ev)
+	return -epollctl(epfd, _EPOLL_CTL_ADD, int32(fd), &ev) // 注册epollo事件
 }
 
 func netpollclose(fd uintptr) int32 {

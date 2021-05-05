@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package sql provides a generic interface around SQL (or SQL-like)
+// Package sql provides a generic interface around SQL (or SQL-like)  // sql like
 // databases.
 //
 // The sql package must be used in conjunction with a database driver.
@@ -31,8 +31,8 @@ import (
 )
 
 var (
-	driversMu sync.RWMutex
-	drivers   = make(map[string]driver.Driver)
+	driversMu sync.RWMutex // 这就是单例吗。。。。。而且这种使用真的没问题吗，看来官方也是建议这种写法，不用花里胡哨的
+	drivers   = make(map[string]driver.Driver) // 这里做了区分
 )
 
 // nowFunc returns the current time; it's overridden in tests.
@@ -41,8 +41,8 @@ var nowFunc = time.Now
 // Register makes a database driver available by the provided name.
 // If Register is called twice with the same name or if driver is nil,
 // it panics.
-func Register(name string, driver driver.Driver) {
-	driversMu.Lock()
+func Register(name string, driver driver.Driver) { // 这个用了官方提供的驱动，实现了他只定义接口，别的包只需要初始化调用就行了
+	driversMu.Lock() // 还不能叫两次，这个要求挺严的
 	defer driversMu.Unlock()
 	if driver == nil {
 		panic("sql: Register driver is nil")
@@ -737,7 +737,7 @@ func OpenDB(c driver.Connector) *DB {
 		stop:         cancel,
 	}
 
-	go db.connectionOpener(ctx)
+	go db.connectionOpener(ctx) // 这里没有看太明白
 
 	return db
 }
@@ -775,7 +775,7 @@ func Open(driverName, dataSourceName string) (*DB, error) {
 		return OpenDB(connector), nil
 	}
 
-	return OpenDB(dsnConnector{dsn: dataSourceName, driver: driveri}), nil
+	return OpenDB(dsnConnector{dsn: dataSourceName, driver: driveri}), nil // open开始拿的
 }
 
 func (db *DB) pingDC(ctx context.Context, dc *driverConn, release func(error)) error {
@@ -1136,13 +1136,13 @@ func (db *DB) maybeOpenNewConnections() {
 	}
 }
 
-// Runs in a separate goroutine, opens new connections when requested.
+// Runs in a separate goroutine, opens new connections when requested.  当请求的时候，开一个新的连接
 func (db *DB) connectionOpener(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-db.openerCh:
+		case <-db.openerCh: // 信号驱动
 			db.openNewConnection(ctx)
 		}
 	}
@@ -2730,7 +2730,7 @@ func (s *Stmt) Query(args ...interface{}) (*Rows, error) {
 	return s.QueryContext(context.Background(), args...)
 }
 
-func rowsiFromStatement(ctx context.Context, ci driver.Conn, ds *driverStmt, args ...interface{}) (driver.Rows, error) {
+func rowsiFromStatement(ctx context.Context, ci driver.Conn, ds *driverStmt, args ...interface{}) (driver.Rows, error) { // 这里进行查询
 	ds.Lock()
 	defer ds.Unlock()
 	dargs, err := driverArgsConnLocked(ci, ds, args)
